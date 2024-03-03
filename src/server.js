@@ -1,12 +1,15 @@
 import express from "express";
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
+
 
 const app = express();
 app.set("view engine", "pug");
 app.set("views", __dirname + "/views");
 app.use("/public", express.static(__dirname + "/public"));
 console.log("hello");
+
+
 
 app.get('/', (req, res)=>{
     res.render("home")
@@ -16,32 +19,58 @@ const handleListen = () => console.log(`Listening on http,ws. On port 3000`);
 
 
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const httpServer = http.createServer(app);
+const io = SocketIO(httpServer);
 
 const sockets = [];
 
-function parseMessage(message){
+function publicRooms(){
+    const {
+        sockets: {
+            adapter: {sids, rooms},
+        },
+    } = io;
+    const publicRooms = [];
+    rooms.forEach((_, key) => {
+        if (sids.get(key) === undefined){
+            publicRooms.push(key);
+        }
+    })
 
+    return publicRooms;
 }
 
-wss.on('connection', (socket) => {
+io.on('connection', (socket) => {
+    console.log(publicRooms());
     sockets.push(socket);
-    socket['nickname'] = 'anonymous'
-    console.log('connected from client')
-    socket.on("close", () => {
-        console.log("disconnected from client")
-    })
-    socket.on("message", (message) => {
-        const data = JSON.parse(message);
-        switch(data.type){
-            case 'message':
-                sockets.forEach(soc => soc.send(`${socket.nickname} : ${data.payload}`));
-            case 'nickname':
-                socket['nickname'] = data.payload;
-                console.log(`set nickname : ${data.payload}`);
-        }
+    console.log('connected from client');
+
+    socket.on("join", (roomName, callback) => {
+        socket.join(roomName);
+        socket.nickname = 'anonymous'
+        callback();
+        
+        socket.to(roomName).emit("welcome", socket.nickname);
+        io.sockets.emit('room_change', publicRooms());
     });
+
+    socket.on("disconnecting", (reason) => {
+        console.log('someone disconnected');
+        socket.rooms.forEach(room => {
+            socket.to(room).emit('bye', socket.nickname);
+        });
+    })
+
+    socket.on("message", (msg, roomName, callback) => {
+        console.log("got message");
+        socket.to(roomName).emit("message", `${socket.nickname} : ${msg}`);
+        callback();
+    })
+
+    socket.on("set_nick", (nick, callback) => {
+        socket.nickname = nick;
+        callback();
+    })
 })
 
-server.listen(3000, handleListen);
+httpServer.listen(3000, handleListen);

@@ -1,57 +1,81 @@
 console.log("Rikka's the best");
+const socket = io();
 
+const welcome = document.getElementById("welcome");
+const joinForm = document.getElementById("joinForm");
+const messageForm = document.getElementById("messageForm");
 const messageList = document.querySelector("ul");
-const nickForm = document.querySelector("#nick");
-const messageForm = document.querySelector("#message");
-// var result = confirm("릿카는 가장 귀엽습니까?");
-// if(result){
-//     alert("당연하죠! 역시 릿카..");
-// }else{
-//     alert("뭘 모르시네..");
-// }
+const messageInput = messageForm.querySelector("input");
 
-const socket = new WebSocket(`ws://${window.location.host}`)
-socket.addEventListener("open", ()=>{
-    console.log("connected to server");
-})
+const nickForm = document.getElementById("nickForm");
+const room = document.getElementById("room");
 
-socket.addEventListener("message", (message) => {
-    const li = document.createElement("li");
-    li.innerText = message.data;
-    messageList.append(li);
-    console.log("New message : \"", message.data, "\" from the server")
-})
+room.hidden = true;
 
-socket.addEventListener("close", () => {
-    console.log("Disconnected from server")
-})
+let roomName;
 
-// setTimeout(() => {
-//     console.log("time's up!");
-//     socket.send("hello from the browser!");
-// }, 10000)
-
-function makeMessage(type, payload){
-    const msg = {type, payload};
-    return JSON.stringify(msg);
+function showRoom(){
+    room.hidden = false;
+    joinForm.hidden = true;
+    const roomTitle = room.querySelector('h3');
+    roomTitle.innerText = `Room ${roomName}`;
 }
 
-function handleSubmit(event){
+function handleJoin(event){
     event.preventDefault();
-    //input 태그
-    const input = messageForm.querySelector("input");
-    socket.send(makeMessage("message", input.value))
+    const input = joinForm.querySelector("input");
+    socket.emit("join", input.value, showRoom);
+    roomName = input.value;
     input.value = "";
 }
 
-function handleNickSubmit(event){
+function sendMessage(event){
+    event.preventDefault();
+    const value = messageInput.value;
+    socket.emit("message", value, roomName, () => {
+        addMessage(`You : ${value}`);
+    });
+    messageInput.value = "";
+}
+
+joinForm.addEventListener("submit", handleJoin);
+messageForm.addEventListener("submit", sendMessage);
+nickForm.addEventListener("submit", setNickname);
+
+socket.on("welcome", (nickname)=>{
+    addMessage(`${nickname} joined the chat`);
+    console.log('welcome');
+})
+
+socket.on("bye", (nickname) => {
+    addMessage(`${nickname} left the chat`);
+})
+
+socket.on("message", (msg) => {
+    addMessage(msg);
+})
+
+socket.on("room_change", (msg)=> console.log(msg));
+
+function addMessage(msg){
+    //socket.to(roomName).send()
+    const li = document.createElement("li");
+    li.innerText = msg;
+    messageList.append(li);
+}
+
+function setNickname(event){
     event.preventDefault();
     //input 태그
     const input = nickForm.querySelector("input");
-    socket.send(makeMessage("nickname", input.value))
+    const value = input.value;
+    socket.emit('set_nick', value, ()=>{
+        console.log('닉네임 설정완료');
+    });
+    input.value = "";
 }
-messageForm.addEventListener("submit", handleSubmit);
-nickForm.addEventListener("submit", handleNickSubmit);
+// messageForm.addEventListener("submit", handleSubmit);
+// nickForm.addEventListener("submit", handleNickSubmit);
 // function fn(event){
 //     console.log('submit')
 // }
