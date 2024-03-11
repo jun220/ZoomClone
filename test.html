@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XR 화상통화</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css" />
+    <link rel="stylesheet" href="/public/css/styles.css" />
+    <!-- 추가된 줄 -->
+  </head>
+  <body>
+    <div id="container">
+      <header>
+        <h1>Zoom clone</h1>
+      </header>
+      <main>
+        <div id="welcome">
+          <form>
+            <input placeholder="room name" required type="text" />
+            <button>Enter room</button>
+          </form>
+        </div>
+        <div id="call">
+          <div id="myStream">
+            <video
+              id="myFace"
+              autoplay
+              playsinline
+              width="400"
+              height="400"
+            ></video>
+            <div id="buttons">
+              <button id="mute">Mute</button>
+              <button id="camera">Turn Camera Off</button>
+            </div>
+            <select id="cameras"></select>
+          </div>
+          <video
+            id="peerFace"
+            autoplay
+            playsinline
+            width="400"
+            height="400"
+          ></video>
+        </div>
+      </main>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/public/js/app.js"></script>
+  </body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zoom clone</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css" />
+    <link rel="stylesheet" href="/public/css/styles.css" />
+    <!-- 추가된 줄 -->
+  </head>
+  <body>
+    <div id="container">
+      <header>
+        <h1>XR 화상통화</h1>
+      </header>
+      <main>
+        <div id="welcome">
+          <form>
+            <input placeholder="room name" required type="text" />
+            <button>Enter room</button>
+          </form>
+        </div>
+        <div id="call">
+          <div id="myStream">
+            <video
+              id="myFace"
+              autoplay
+              playsinline
+              width="400"
+              height="400"
+            ></video>
+            <div id="buttons">
+              <button id="mute">Mute</button>
+              <button id="camera">Turn Camera Off</button>
+            </div>
+            <select id="cameras"></select>
+          </div>
+          <video
+            id="peerFace"
+            autoplay
+            playsinline
+            width="400"
+            height="400"
+          ></video>
+        </div>
+      </main>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/public/js/app.js"></script>
+  </body>
+</html>

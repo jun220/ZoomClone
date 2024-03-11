@@ -2,10 +2,12 @@ import express from "express";
 import http from "http";
 import SocketIO from "socket.io";
 
+const path = require("path");
 const app = express();
 app.set("view engine", "pug");
 app.set("views", __dirname + "/views");
 app.use("/public", express.static(__dirname + "/public"));
+app.use("/views", express.static(path.join(__dirname, "views")));
 
 const handleListen = () => console.log(`Listening on http,ws. On port 3000`);
 
@@ -13,7 +15,9 @@ const httpServer = http.createServer(app);
 const io = SocketIO(httpServer);
 
 app.get("/", (req, res) => {
-  res.render("home");
+  //res.sendFile("home.html");
+  res.sendFile("home.html", { root: path.join(__dirname, "views") });
+  //res.render("home");
 });
 
 io.on("connection", (socket) => {
