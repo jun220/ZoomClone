@@ -18,6 +18,9 @@ let currentRoomName;
 /** @type {RTCPeerConnection} */
 let myPeerConnection;
 
+/** @type {RTCDataChannel} */
+let myDataChannel;
+
 async function getCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -103,6 +106,11 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 // Socket code
 
 socket.on("welcome", async () => {
+  //DataChannel 생성
+  myDataChannel = myPeerConnection.createDataChannel("chat");
+  myDataChannel.addEventListener("message", console.log);
+  console.log("made data channel");
+
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer);
   console.log("sent the offer");
@@ -111,6 +119,13 @@ socket.on("welcome", async () => {
 
 socket.on("offer", async (offer) => {
   console.log("received the offer");
+
+  //Data channel 세팅
+  myPeerConnection.addEventListener("datachannel", (event) => {
+    myDataChannel = event.channel;
+    myDataChannel.addEventListener("message", console.log);
+  });
+
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   myPeerConnection.setLocalDescription(answer);
@@ -132,6 +147,19 @@ socket.on("ice", (ice) => {
 
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  // myPeerConnection = new RTCPeerConnection({
+  //   iceServers: [
+  //     {
+  //       urls: [
+  //         "stun:stun.l.google.com:19302",
+  //         "stun:stun1.l.google.com:19302",
+  //         "stun:stun2.l.google.com:19302",
+  //         "stun:stun3.l.google.com:19302",
+  //         "stun:stun4.l.google.com:19302",
+  //       ],
+  //     },
+  //   ],
+  // });
   myPeerConnection.addEventListener("icecandidate", handleIce);
   myPeerConnection.addEventListener("addstream", handleAddStream);
   myStream
