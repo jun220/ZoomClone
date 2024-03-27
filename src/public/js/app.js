@@ -32,29 +32,62 @@ let myPeerConnection;
 /** @type {RTCDataChannel} */
 let myDataChannel;
 
+// async function getCameras() {
+//   try {
+//     const devices = await navigator.mediaDevices.enumerateDevices();
+//     const cameras = devices.filter((device) => device.kind === "videoinput");
+//     cameras.forEach((camera) => {
+//       const option = document.createElement("option");
+//       option.value = camera.deviceId;
+//       option.innerText = camera.label;
+//       camerasSelect.appendChild(option);
+//     });
+
+//     const option = document.createElement("option");
+//     option.value = "screen";
+//     option.innerText = "화면 공유";
+//     camerasSelect.appendChild(option);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
+
 async function getCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cameras = devices.filter((device) => device.kind === "videoinput");
+    const currentCamera = myStream.getVideoTracks()[0];
     cameras.forEach((camera) => {
       const option = document.createElement("option");
       option.value = camera.deviceId;
       option.innerText = camera.label;
+      if (currentCamera.label === camera.label) {
+        option.selected = true;
+      }
       camerasSelect.appendChild(option);
     });
-  } catch (error) {
-    console.log(error);
+  } catch (e) {
+    console.log(e);
   }
 }
 
-async function getMedia() {
+async function getMedia(deviceId) {
+  const initialConstrains = {
+    audio: true,
+    video: { facingMode: "user" },
+  };
+  const cameraConstraints = {
+    audio: true,
+    video: { deviceId: { exact: deviceId } },
+  };
   try {
-    myStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
+    myStream = await navigator.mediaDevices.getUserMedia(
+      deviceId ? cameraConstraints : initialConstrains
+    );
     myFace.srcObject = myStream;
-    await getCameras();
+    if (!deviceId) {
+      await getCameras();
+    }
   } catch (e) {
     console.log(e);
   }
@@ -85,7 +118,30 @@ muteBtn.addEventListener("click", handleMuteClick);
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
 
+// async function handleCameraChange() {
+//   if (camerasSelect.value == "screen") {
+//     console.log("화면 공유");
+//     startScreenSharing();
+//     return;
+//   }
+//   await getMedia(camerasSelect.value);
+//   if (myPeerConnection) {
+//     console.log("카메라 교체");
+//     const videoTrack = myStream.getVideoTracks()[0];
+//     const videoSender = myPeerConnection
+//       .getSenders()
+//       .find((sender) => sender.track.kind === "video");
+//     videoSender.replaceTrack(videoTrack);
+//   }
+// }
+
 async function handleCameraChange() {
+  if (camerasSelect.value == "screen") {
+    console.log("화면 공유");
+    startScreenSharing();
+    return;
+  }
+
   await getMedia(camerasSelect.value);
   if (myPeerConnection) {
     const videoTrack = myStream.getVideoTracks()[0];
@@ -95,6 +151,35 @@ async function handleCameraChange() {
     videoSender.replaceTrack(videoTrack);
   }
 }
+
+// async function handleCameraChange() {
+//   if (camerasSelect.value == "screen") {
+//     console.log("화면 공유");
+//     startScreenSharing();
+//     return;
+//   }
+
+//   try {
+//     const stream = await getMedia(camerasSelect.value);
+//     if (myPeerConnection) {
+//       console.log("카메라 교체");
+//       const videoTrack = stream.getVideoTracks()[0];
+//       const videoSender = myPeerConnection
+//         .getSenders()
+//         .find((sender) => sender.track.kind === "video");
+//       if (videoSender) {
+//         await videoSender.replaceTrack(videoTrack);
+//         console.log("카메라 교체 완료");
+//       } else {
+//         console.error("비디오 트랙을 찾을 수 없습니다.");
+//       }
+//     } else {
+//       console.error("Peer 연결이 없습니다.");
+//     }
+//   } catch (error) {
+//     console.error("카메라 변경 중 오류 발생:", error);
+//   }
+// }
 
 const welcomeForm = welcome.querySelector("form");
 
@@ -287,45 +372,6 @@ function handleFileSelect(event) {
   reader.readAsDataURL(file);
 }
 
-// function handleDataMessage(event) {
-//   console.log(event.data);
-//   // 받은 데이터가 이미지 데이터인 경우
-//   if (typeof event.data === "string" && event.data.startsWith("data:image")) {
-//     const image = new Image();
-//     image.onload = function () {
-//       // 캔버스의 크기를 고정
-//       const canvasWidth = capturedCanvas.width;
-//       const canvasHeight = capturedCanvas.height;
-
-//       // 이미지의 가로, 세로 비율 계산
-//       const imageRatio = image.width / image.height;
-//       const canvasRatio = canvasWidth / canvasHeight;
-
-//       // 캔버스에 그릴 이미지 크기 계산
-//       let drawWidth = canvasWidth;
-//       let drawHeight = canvasHeight;
-//       let offsetX = 0;
-//       let offsetY = 0;
-
-//       if (imageRatio > canvasRatio) {
-//         // 이미지의 가로가 캔버스보다 길 때
-//         drawWidth = canvasWidth;
-//         drawHeight = drawWidth / imageRatio;
-//         offsetY = (canvasHeight - drawHeight) / 2;
-//       } else {
-//         // 이미지의 세로가 캔버스보다 길 때
-//         drawHeight = canvasHeight;
-//         drawWidth = drawHeight * imageRatio;
-//         offsetX = (canvasWidth - drawWidth) / 2;
-//       }
-
-//       // 캔버스에 이미지 그리기
-//       ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-//     };
-//     image.src = event.data;
-//   }
-// }
-
 const sendButton = document.getElementById("sendButton");
 
 sendButton.addEventListener("click", () => {
@@ -385,4 +431,24 @@ function handleImageData(image) {
 
   // 캔버스에 이미지 그리기
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+//화면 공유
+async function startScreenSharing() {
+  const stream = await captureScreen();
+  if (stream) {
+    // 캡처된 화면을 WebRTC를 사용하여 다른 피어와 공유하는 코드를 작성
+  }
+}
+
+async function captureScreen() {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+    });
+    return stream;
+  } catch (error) {
+    console.error("Error capturing screen:", error);
+    return null;
+  }
 }
